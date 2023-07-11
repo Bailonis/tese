@@ -4,38 +4,26 @@
 const int UPDATE_INTERVAL = 1000;   // Update interval in milliseconds
 
 // Variables
-float initialAngle = 0.0;            // Initial angle
-float currentAngle = 0.0;            // Current angle
-unsigned long lastUpdateTime = 0;    // Last update time
+float initialAngle = 0.0;          // Initial angle
+float currentAngle = 0.0;          // Current angle
+float previousYaw = 0.0;           // Previous yaw value
 
 void setup() {
   M5.begin();
   M5.IMU.Init();
-  initialAngle = 0.0;  // Set the initial angle to 0
+  initialAngle = 0.0;       // Set the initial angle
+  previousYaw = initialAngle;
 }
 
 void loop() {
   M5.update();
 
-  // Read the gyroscope data for X and Y axes
-  float gx, gy, gz;
-  M5.IMU.getGyroData(&gx, &gy, &gz);
-
-  // Calculate the time elapsed since the last update
-  unsigned long currentTime = millis();
-  float elapsedTime = (currentTime - lastUpdateTime) / 1000.0;
-  lastUpdateTime = currentTime;
-
-  // Calculate the change in angle based on gyroscope data and elapsed time
-  float deltaAngle = gx * elapsedTime;
-
-  // Update the current angle
-  currentAngle += deltaAngle;
+  // Calculate the current angle
+  currentAngle = initialAngle + calculateYawChange();
 
   // Normalize the angle between 0 and 360 degrees
-  if (currentAngle >= 360.0) {
-    currentAngle -= 360.0;
-  } else if (currentAngle < 0.0) {
+  currentAngle = fmod(currentAngle, 360.0);
+  if (currentAngle < 0.0) {
     currentAngle += 360.0;
   }
 
@@ -54,4 +42,27 @@ void loop() {
   M5.Lcd.print("º");
 
   delay(UPDATE_INTERVAL);
+}
+
+float getCurrentAngle() {
+  // Read the AHRS data
+  float pitch, roll, yaw;
+  M5.IMU.getAhrsData(&pitch, &roll, &yaw);
+
+  // Calculate the angle using the yaw value
+  return yaw * 180.0 / PI;
+}
+
+float calculateYawChange() {
+  // Read the AHRS data
+  float pitch, roll, yaw;
+  M5.IMU.getAhrsData(&pitch, &roll, &yaw);
+
+  // Calculate the change in yaw since the previous value
+  float yawChange = yaw - previousYaw;
+
+  // Store the current yaw as the previous yaw for the next iteration
+  previousYaw = yaw;
+
+  return yawChange * 180.0 / PI;
 }
