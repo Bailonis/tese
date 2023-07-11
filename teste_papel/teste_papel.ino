@@ -4,22 +4,20 @@
 const int UPDATE_INTERVAL = 1000;   // Update interval in milliseconds
 
 // Variables
-float initialAngle = 0.0;          // Initial angle
 float currentAngle = 0.0;          // Current angle
 float previousYaw = 0.0;           // Previous yaw value
 
 void setup() {
   M5.begin();
   M5.IMU.Init();
-  initialAngle = 0.0;       // Set the initial angle
-  previousYaw = initialAngle;
+  previousYaw = currentAngle;
 }
 
 void loop() {
   M5.update();
 
   // Calculate the current angle
-  currentAngle = initialAngle + calculateYawChange();
+  currentAngle = currentAngle + calculateYawChange();
 
   // Normalize the angle between 0 and 360 degrees
   currentAngle = fmod(currentAngle, 360.0);
