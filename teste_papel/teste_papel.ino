@@ -4,14 +4,14 @@
 const int UPDATE_INTERVAL = 1000;   // Update interval in milliseconds
 
 // Variables
-float initialAngle = 0.0;          // Initial angle
-float currentAngle = 0.0;          // Current angle
-
+float initialAngle = 0.0;            // Initial angle
+float currentAngle = 0.0;            // Current angle
+unsigned long lastUpdateTime = 0;    // Last update time
 
 void setup() {
   M5.begin();
   M5.IMU.Init();
-  initialAngle = 0;       // Store the initial angle
+  initialAngle = 0.0;  // Set the initial angle to 0
 }
 
 void loop() {
@@ -21,7 +21,16 @@ void loop() {
   float gx, gy, gz;
   M5.IMU.getGyroData(&gx, &gy, &gz);
 
-  currentAngle += (gx * UPDATE_INTERVAL / 1000.0);
+  // Calculate the time elapsed since the last update
+  unsigned long currentTime = millis();
+  float elapsedTime = (currentTime - lastUpdateTime) / 1000.0;
+  lastUpdateTime = currentTime;
+
+  // Calculate the change in angle based on gyroscope data and elapsed time
+  float deltaAngle = gx * elapsedTime;
+
+  // Update the current angle
+  currentAngle += deltaAngle;
 
   // Normalize the angle between 0 and 360 degrees
   if (currentAngle >= 360.0) {
@@ -46,5 +55,3 @@ void loop() {
 
   delay(UPDATE_INTERVAL);
 }
-
-
