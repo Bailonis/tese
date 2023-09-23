@@ -5,11 +5,29 @@
 
 ICM20600 icm20600(true);
 AK09918 ak09918;
-int16_t gyro_x, gyro_y, gyro_z;
-int32_t mag_x, mag_y, mag_z;
+
+const int FLEX_SENSOR_PIN = A0; // Replace with the appropriate analog pin connected to the flex sensor
+const float ALPHA = 0.98;
+const float GYRO_CONVERSION_FACTOR = 131.0;
+const int DELAY_TIME = 1000; // Reduced delay to 1 second for better data logging
+
 double roll, pitch, yaw;
 
-const float alpha = 0.98;  // Complementary filter constant
+double baselineRoll, baselinePitch, baselineFlex; // Baseline values
+double rollThreshold = 10.0;  // Define your thresholds
+double pitchThreshold = 10.0;
+int flexThreshold = 50; // Arbitrary value, adjust as needed
+
+bool isCalibrating = true; // Calibration flag
+
+double calculateRoll(int16_t acc_x, int16_t acc_y, int16_t acc_z) {
+    return atan2((float)acc_y, (float)acc_z) * 180.0 / M_PI;
+}
+
+double calculatePitch(int16_t acc_x, int16_t acc_y, int16_t acc_z) {
+    return atan2(-(float)acc_x, sqrt((float)acc_y * acc_y + (float)acc_z * acc_z)) * 180.0 / M_PI;
+}
+
 
 void setup() {
     Wire.begin();
@@ -17,53 +35,38 @@ void setup() {
     ak09918.initialize();
     Serial.begin(9600);
     yaw = 0;
+
+    Serial.println("Starting Calibration... Maintain a neutral posture!");
+    delay(5000); // Give 5 seconds for user to assume a neutral posture
+    calibrateSensors(); // Establish baseline
+    Serial.println("Calibration Complete!");
+    isCalibrating = false;
+}
+
+void calibrateSensors() {
+    // Fetch and set baseline values
+    baselineRoll = calculateRoll(icm20600.getAccelerationX(), icm20600.getAccelerationY(), icm20600.getAccelerationZ());
+    baselinePitch = calculatePitch(icm20600.getAccelerationX(), icm20600.getAccelerationY(), icm20600.getAccelerationZ());
+    baselineFlex = analogRead(FLEX_SENSOR_PIN);
 }
 
 void loop() {
-    // Read gyroscope data
-    gyro_x = icm20600.getGyroscopeX();
-    gyro_y = icm20600.getGyroscopeY();
-    gyro_z = icm20600.getGyroscopeZ();
+    // ... [Rest of the orientation code] ...
 
-    // Read magnetometer data
-    ak09918.getData(&mag_x, &mag_y, &mag_z);
-
-    // Calculate roll and pitch from accelerometer data
-    int16_t acc_x = icm20600.getAccelerationX();
-    int16_t acc_y = icm20600.getAccelerationY();
-    int16_t acc_z = icm20600.getAccelerationZ();
-    roll = atan2((float)acc_y, (float)acc_z) * 180.0 / M_PI;
-    pitch = atan2(-(float)acc_x, sqrt((float)acc_y * acc_y + (float)acc_z * acc_z)) * 180.0 / M_PI;
-
-    // Calculate yaw using complementary filter
-    yaw += (gyro_z / 131.0) * 0.01;  // Gyroscope integration
-    double mag_heading = atan2((double)mag_y, (double)mag_x) * 180.0 / M_PI;
-    double gyro_heading = yaw;
-    double diff = mag_heading - gyro_heading;
-
-    // Adjust the difference to be within -180 to 180 degrees
-    if (diff > 180.0) {
-        diff -= 360.0;
-    } else if (diff < -180.0) {
-        diff += 360.0;
+    // Detect rounded shoulders based on deviations from baseline
+    if (!isCalibrating && (abs(roll - baselineRoll) > rollThreshold || abs(pitch - baselinePitch) > pitchThreshold || abs(analogRead(FLEX_SENSOR_PIN) - baselineFlex) > flexThreshold)) {
+        Serial.println("Rounded Shoulders Detected!");
     }
 
-    yaw = alpha * (gyro_heading + diff) + (1.0 - alpha) * mag_heading;
+    // Data logging (assuming SD card module or other storage means)
+    logData();
 
-    // Ensure yaw angle is between 0 and 360 degrees
-    yaw = fmod(yaw, 360.0);
-    if (yaw < 0) {
-        yaw += 360.0;
-    }
+    delay(DELAY_TIME);
+}
 
-    Serial.println("-----------------------");
-    Serial.print("Roll: ");
-    Serial.println(roll);
-    Serial.print("Pitch: ");
-    Serial.println(pitch);
-    Serial.print("Yaw: ");
-    Serial.println(yaw);
-    Serial.println("-----------------------");
-
-    delay(10000);
+void logData() {
+    // Store data in a preferred manner. Here, we're just printing to the serial monitor
+    Serial.print("Roll: "); Serial.print(roll);
+    Serial.print("\tPitch: "); Serial.print(pitch);
+    Serial.print("\tFlex Value: "); Serial.println(analogRead(FLEX_SENSOR_PIN));
 }
