@@ -20,6 +20,8 @@ int flexThreshold = 50;
 bool isCalibrating = true;
 unsigned long lastUpdateTime = 0; // For non-blocking delay
 
+double deviationPitch; // Store the deviation of pitch from baseline
+
 double calculateRoll(int16_t acc_x, int16_t acc_y, int16_t acc_z) {
     return atan2((float)acc_y, (float)acc_z) * 180.0 / M_PI;
 }
@@ -57,9 +59,13 @@ void loop() {
         roll = ALPHA * roll + (1.0 - ALPHA) * calculateRoll(icm20600.getAccelerationX(), icm20600.getAccelerationY(), icm20600.getAccelerationZ());
         pitch = ALPHA * pitch + (1.0 - ALPHA) * calculatePitch(icm20600.getAccelerationX(), icm20600.getAccelerationY(), icm20600.getAccelerationZ());
        
+       deviationPitch = pitch - baselinePitch; // range of [-90º, 90º]
 
-        if (!isCalibrating && (abs(roll - baselineRoll) > rollThreshold || abs(pitch - baselinePitch) > pitchThreshold || abs(analogRead(FLEX_SENSOR_PIN) - baselineFlex) > flexThreshold)) {
-            Serial.println("Rounded Shoulders Detected!");
+        if (!isCalibrating && (abs(roll - baselineRoll) > rollThreshold || abs(deviationPitch) > pitchThreshold || abs(analogRead(FLEX_SENSOR_PIN) - baselineFlex) > flexThreshold)) {
+            Serial.print("Rounded Shoulders Detected!");
+            Serial.print("\n Deviation angle: ");
+            Serial.print(deviationPitch, 2); // Print deviation with 2 decimal places
+            Serial.println(" degrees");
         }
 
         logData();
