@@ -72,21 +72,30 @@ void loop() {
 
 void detectBadPosture() {
     if (!isCalibrating) {
-        bool isBadPosture = (pitch - baselinePitch) > pitchThreshold || 
+        double pitchDeviation = normalizeAngle(pitch - baselinePitch);
+        Serial.print("Pitch Deviation: "); Serial.println(pitchDeviation);
+        bool isBadPosture = (pitchDeviation) > pitchThreshold || 
                             abs(analogRead(FLEX_SENSOR_PIN) - baselineFlex) > flexThreshold;
 
         if (isBadPosture) {
             Serial.println("Bad Shoulder Posture Detected!");
-            Serial.print("Pitch Deviation: "); Serial.println(pitch - baselinePitch);
+            Serial.print("Pitch Deviation: "); Serial.println(pitchDeviation);
         }
     }
 }
 
+double normalizeAngle(double angle) {
+    while (angle <= -180) angle += 360;
+    while (angle > 180) angle -= 360;
+    return angle;
+}
+
+
 void logData() {
     Serial.print("Pitch: "); Serial.print(pitch);
     Serial.print("\tBaselinePitch Value: "); Serial.print(baselinePitch);
-    Serial.print("\tPitch Threshold: "); Serial.print(pitchThreshold);
-    Serial.print("\tPitch Deviation: "); Serial.println(pitch - baselinePitch);
+    Serial.print("\tPitch Threshold: "); Serial.println(pitchThreshold);
+   
     
 }
 
