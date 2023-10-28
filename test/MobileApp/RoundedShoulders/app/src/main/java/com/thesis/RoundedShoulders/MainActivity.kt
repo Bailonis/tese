@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -18,18 +19,21 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private val MAC_ADDRESS_OF_ESP32 = "YOUR_ACTUAL_MAC_ADDRESS_HERE"
+    private val MAC_ADDRESS_OF_ESP32 = "7C:9E:BD:4B:B0:7C"
     private val REQUEST_BLUETOOTH_PERMISSION = 1001
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bluetoothDevice: BluetoothDevice
     private lateinit var bluetoothSocket: BluetoothSocket
     private var isConnected = false
+    private lateinit var statusTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val connectButton: Button = findViewById(R.id.connectButton)
+        statusTextView = findViewById(R.id.statusTextView)
+
         connectButton.setOnClickListener {
             checkBluetoothPermission()
         }
@@ -94,15 +98,23 @@ class MainActivity : AppCompatActivity() {
                     bluetoothSocket.connect()
                     isConnected = true
 
+                    runOnUiThread {
+                        statusTextView.text = getString(R.string.status_connected)
+                    }
+
                     val inputStream = bluetoothSocket.inputStream
+                    val outputStream = bluetoothSocket.outputStream
 
                     while (isConnected) {
                         val data = inputStream.read()
-                        Log.d("MainActivity", "Received data from ESP32: $data")
+                        outputStream.write(data)
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
                     isConnected = false
+                    runOnUiThread {
+                        statusTextView.text = getString(R.string.status_connection_failed)
+                    }
                 }
             }.start()
         } catch (se: SecurityException) {
@@ -113,11 +125,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        disconnectBluetooth()
+    }
+
+    private fun disconnectBluetooth() {
+        isConnected = false
         try {
-            isConnected = false
             bluetoothSocket.close()
         } catch (e: IOException) {
             e.printStackTrace()
         }
+        statusTextView.text = getString(R.string.status_not_connected)
     }
 }
