@@ -19,7 +19,7 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private val MAC_ADDRESS_OF_ESP32 = "7C:9E:BD:4B:B0:7C"
+    private val MAC_ADDRESS_OF_ESP32 = "7C:9E:BD:4B:B0:7E"
     private val REQUEST_BLUETOOTH_PERMISSION = 1001
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bluetoothDevice: BluetoothDevice
