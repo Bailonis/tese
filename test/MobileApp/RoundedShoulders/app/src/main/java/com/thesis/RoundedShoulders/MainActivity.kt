@@ -9,7 +9,9 @@ import android.bluetooth.BluetoothManager
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,7 +28,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothSocket: BluetoothSocket
     private var isConnected = false
     private lateinit var statusTextView: TextView
-    private lateinit var receivedTextView: TextView
+    private lateinit var listView: ListView
+    private val dataList: MutableList<String> = mutableListOf()
+    private lateinit var adapter: ArrayAdapter<String>
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +40,10 @@ class MainActivity : AppCompatActivity() {
 
         val connectButton: Button = findViewById(R.id.connectButton)
         statusTextView = findViewById(R.id.statusTextView)
-        receivedTextView = findViewById(R.id.receivedTextView)
+        listView = findViewById(R.id.listView)
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dataList)
+        listView.adapter = adapter
+
 
 
         connectButton.setOnClickListener {
@@ -119,7 +127,12 @@ class MainActivity : AppCompatActivity() {
 
                             // Check if the received character is a newline character
                             if (readChar == '\n') {
-                                receivedTextView.text = receivedString.toString()
+                                val completeString = receivedString.toString()
+                                runOnUiThread {
+                                    // Add the received message to the dataList and notify the adapter
+                                    dataList.add(completeString)
+                                    adapter.notifyDataSetChanged()
+                                }
                                 receivedString.clear()  // Clear the StringBuilder for the next message
                             } else {
                                 receivedString.append(readChar)
