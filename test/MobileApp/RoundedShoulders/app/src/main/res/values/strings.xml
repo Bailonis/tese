@@ -4,5 +4,6 @@
     <string name="connect_to_esp32">Connect to ESP32</string>
     <string name="status_connected">Connected to ESP32</string>
     <string name="status_connection_failed">Failed to connect to ESP32</string>
+    <string name="data">Data</string>
 
 </resources>

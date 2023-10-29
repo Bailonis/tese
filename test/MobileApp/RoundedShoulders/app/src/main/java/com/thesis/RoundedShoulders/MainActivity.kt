@@ -26,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothSocket: BluetoothSocket
     private var isConnected = false
     private lateinit var statusTextView: TextView
+    private lateinit var receivedTextView: TextView
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +35,8 @@ class MainActivity : AppCompatActivity() {
 
         val connectButton: Button = findViewById(R.id.connectButton)
         statusTextView = findViewById(R.id.statusTextView)
+        receivedTextView = findViewById(R.id.receivedTextView)
+
 
         connectButton.setOnClickListener {
             checkBluetoothPermission()
@@ -105,10 +109,26 @@ class MainActivity : AppCompatActivity() {
                     val inputStream = bluetoothSocket.inputStream
                     val outputStream = bluetoothSocket.outputStream
 
+                    val receivedString = StringBuilder()
+
                     while (isConnected) {
-                        val data = inputStream.read()
-                        outputStream.write(data)
+                        val byteReceived = inputStream.read()
+
+                        if (byteReceived != -1) {  // Check if the end of the stream has not been reached
+                            val readChar = byteReceived.toChar()
+
+                            // Check if the received character is a newline character
+                            if (readChar == '\n') {
+                                receivedTextView.text = receivedString.toString()
+                                receivedString.clear()  // Clear the StringBuilder for the next message
+                            } else {
+                                receivedString.append(readChar)
+                            }
+
+                            outputStream.write(byteReceived)
+                        }
                     }
+
                 } catch (e: IOException) {
                     e.printStackTrace()
                     isConnected = false
